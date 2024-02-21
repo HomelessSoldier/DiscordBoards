@@ -7,12 +7,12 @@ import java.io.IOException;
 
 public class DiscordBoardsConfig {
     private static final String CONFIG_FILE_NAME = "discordboards.txt";
-
-    public String discordMessageFormat = "[{server} Scoreboard] {objective}: {value}";
-    public String discordChannelId = "";
-    public String botWebhookUrl = "";
+    public String discordWebhookUrl = "";
+    public String discordMessageFormat = "`Header1, player 1, player 2, player 3, etc.`";
     public String scoreboardObjective = "score";
-    public int refreshInterval = 60; // Example: Refresh scoreboard every 60 seconds
+    public boolean enableTimerUpdates = true;
+    public int timerUpdateInterval = 60;
+    public String updateEvent = "minecraft.server.player_logged_in";
 
     public void loadConfig() {
         File configFile = new File(FabricLoader.getInstance().getConfigDir().toFile(), CONFIG_FILE_NAME);
@@ -27,24 +27,27 @@ public class DiscordBoardsConfig {
                     String value = parts[1].trim();
 
                     switch (key) {
-                        case "discordMessageFormat":
+                        case "discordwebhook":
+                            discordWebhookUrl = value;
+                            break;
+                        case "discordmessageformat":
                             discordMessageFormat = value;
                             break;
-                        case "discordChannelId":
-                            discordChannelId = value;
-                            break;
-                        case "botWebhookUrl":
-                            botWebhookUrl = value;
-                            break;
-                        case "scoreboardObjective":
+                        case "scoreboardname":
                             scoreboardObjective = value;
                             break;
-                        case "refreshInterval":
+                        case "enabletimerupdates":
+                            enableTimerUpdates = Boolean.parseBoolean(value);
+                            break;
+                        case "timerupdateinterval":
                             try {
-                                refreshInterval = Integer.parseInt(value);
+                                timerUpdateInterval = Integer.parseInt(value);
                             } catch (NumberFormatException e) {
-                                System.err.println("Invalid refreshInterval in config. Using default value.");
+                                System.err.println("Invalid timerUpdateInterval in config. Using default value.");
                             }
+                            break;
+                        case "updateevent":
+                            updateEvent = value;
                             break;
                         default:
                             System.err.println("Unknown config option: " + key);
@@ -61,11 +64,12 @@ public class DiscordBoardsConfig {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(configFile))) {
             writer.write("# DiscordBoards Configuration File\n");
-            writer.write("discordMessageFormat=" + discordMessageFormat + "\n");
-            writer.write("discordChannelId=" + discordChannelId + "\n");
-            writer.write("botWebhookUrl=" + botWebhookUrl + "\n");
-            writer.write("scoreboardObjective=" + scoreboardObjective + "\n");
-            writer.write("refreshInterval=" + refreshInterval + "\n"); // Example
+            writer.write("discordwebhook=" + discordWebhookUrl + "\n");
+            writer.write("discordmessageformat=" + discordMessageFormat + "\n");
+            writer.write("scoreboardname=" + scoreboardObjective + "\n");
+            writer.write("enabletimerupdates=" + enableTimerUpdates + "\n");
+            writer.write("timerupdateinterval=" + timerUpdateInterval + "\n");
+            writer.write("updateevent=" + updateEvent + "\n");
         } catch (IOException e) {
             System.err.println("Error saving DiscordBoards config: " + e.getMessage());
         }

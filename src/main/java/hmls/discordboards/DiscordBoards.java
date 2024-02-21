@@ -1,108 +1,121 @@
-package hmls.discordboards;
-
-import hmls.discordboards.DiscordBoardsConfig;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.scoreboard.Scoreboard;
-import net.minecraft.scoreboard.ScoreboardObjective;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.RequestBody;
-import okhttp3.Request;
-import okhttp3.Response;
-import hmls.discordboards.ScoreboardFetcher;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.URI;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class DiscordBoards implements ModInitializer {
-    public static final Logger LOGGER = LoggerFactory.getLogger("DiscordBoards");
-    public DiscordBoardsConfig config;
-    private Timer updateTimer;
+public class DiscordBoardsMod implements ModInitializer {
+    private DiscordBoardsConfig config;
     private ScoreboardFetcher scoreboardFetcher;
-    private OkHttpClient httpClient;
-    private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
+    private MinecraftServer server;
+
+    private HttpClient httpClient;
+    private String webhookMessageID;
 
     @Override
     public void onInitialize() {
-        config = loadConfig();
-        scoreboardFetcher = new ScoreboardFetcher(FabricLoader.getInstance().getGameInstance().getServer(), config.scoreboardObjective);
-        httpClient = new OkHttpClient();
+        config = new DiscordBoardsConfig();
+        config.loadConfig();
 
-        updateTimer = new Timer();
-        updateTimer.scheduleAtFixedRate(new TimerTask() {
+        server = ServerLifecycleEvents.SERVER_STARTED.getInvokers().get(0).getServer();
+        scoreboardFetcher = new ScoreboardFetcher(server, config.scoreboardObjective);
+
+        httpClient = HttpClient.newHttpClient();
+        webhookMessageID = sendInitialMessage();
+
+        if (config.enableTimerUpdates) {
+            startTimerUpdates();
+        }
+
+        // Event Listener (if desired)
+        ServerLifecycleEvents.SERVER_STARTED.register((server) -> {
+            if (!config.enableTimerUpdates) {
+                updateDiscordMessage();
+            }
+        });
+    }
+
+    private void startTimerUpdates() {
+        new Timer().scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                sendScoreboardUpdate();
+                updateDiscordMessage();
             }
-        }, 0, config.refreshInterval * 1000L);
+        }, 0, Duration.ofSeconds(config.timerUpdateInterval).toMillis());
     }
 
-    private DiscordBoardsConfig loadConfig() {
+    private String sendInitialMessage() {
+        // ... (Logic to format a message, see 'sendDiscordMessage' method below) 
+        String initialMessage = formatDiscordMessage(scoreboardFetcher.fetchScoreboardData());
+        return sendDiscordMessage(config.discordWebhookUrl, initialMessage);
+    }
+
+    private void updateDiscordMessage() {
+        String updatedMessage = formatDiscordMessage(scoreboardFetcher.fetchScoreboardData());
+        sendDiscordMessage(config.discordWebhookUrl, updatedMessage, webhookMessageID);
+    }
+
+    private String formatDiscordMessage(Map<String, Integer> scores) {
+        if (scores.isEmpty()) {
+            return "No scoreboard data available.";
+        }
+
+        // Example Formatting - Customize this! 
+        StringBuilder builder = new StringBuilder(config.discordMessageFormat);
+        for (Map.Entry<String, Integer> entry : scores.entrySet()) {
+            builder.append("\n").append(entry.getKey()).append(": ").append(entry.getValue());
+        }
+        return builder.toString();
+    }
+
+    private String sendDiscordMessage(String webhookUrl, String content) {
+        // ... (Implementation of sending a new message, see below) 
+    }
+
+    private String sendDiscordMessage(String webhookUrl, String content, String messageId) {
+        // ... (Implementation of editing an existing message, see below)
+    }
+
+// ... (Rest of your DiscordBoardsMod class)
+
+    private String sendDiscordMessage(String webhookUrl, String content) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(webhookUrl))
+                .POST(HttpRequest.BodyPublishers.ofString("{\"content\": \"" + content + "\"}"))
+                .header("Content-Type", "application/json")
+                .build();
+
         try {
-            ConfigBuilder builder = ConfigBuilder.create()
-                    .setPath(FabricLoader.getInstance().getConfigDir().resolve("discordboardsmod.json"))
-                    .setDefaultValue(new DiscordBoardsConfig());
-            DiscordBoardsConfig config = builder.build().load();
-            builder.save(); // Save immediately on first creation
-            return config;
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+            // Extract message ID from response (adjust if your API returns it differently)
+            return extractMessageIdFromResponse(response);
         } catch (Exception e) {
-            LOGGER.error("Error loading DiscordBoards config.", e);
-            return new DiscordBoardsConfig(); // Return default on failure 
+            System.err.println("Error sending Discord message: " + e.getMessage());
+            return null;
         }
     }
 
-    private void sendScoreboardUpdate() {
+    private String sendDiscordMessage(String webhookUrl, String content, String messageId) {
+        String patchUrl = webhookUrl + "/messages/" + messageId;
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(patchUrl))
+                .method("PATCH", HttpRequest.BodyPublishers.ofString("{\"content\": \"" + content + "\"}"))
+                .header("Content-Type", "application/json")
+                .build();
+
         try {
-            String message = formatScoreboardMessage();
-            RequestBody body = RequestBody.create(message, JSON_MEDIA_TYPE);
-            Request request = new Request.Builder().url(config.botWebhookUrl).post(body).build();
-            Response response = httpClient.newCall(request).execute();
-
-            if (!response.isSuccessful()) {
-                LOGGER.error("Failed to send Discord scoreboard update. Response code: {}", response.code());
-            }
-        } catch (IOException e) {
-            LOGGER.error("Error sending Discord scoreboard update.", e);
+            httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            return messageId; // Success, return the existing message ID
+        } catch (Exception e) {
+            System.err.println("Error editing Discord message: " + e.getMessage());
+            return null;
         }
-    }
-
-    private String formatScoreboardMessage() {
-        Map<String, Integer> scores = scoreboardFetcher.fetchScoreboardData();
-
-        // Limit the top X entries based on config 
-        scores = limitEntries(scores, config.displayTopEntries);
-
-        StringBuilder messageBuilder = new StringBuilder();
-        messageBuilder.append(config.discordMessageFormat.replace("{server}", "Minecraft Server")); // Replace with actual server name later 
-
-        for (Map.Entry<String, Integer> entry : scores.entrySet()) {
-            messageBuilder.append(config.discordMessageFormat
-                            .replace("{objective}", config.scoreboardObjective)
-                            .replace("{player}", entry.getKey())
-                            .replace("{value}", entry.getValue().toString()))
-                    .append("\n");
-        }
-
-        return messageBuilder.toString();
-    }
-
-    private Map<String, Integer> limitEntries(Map<String, Integer> scores, int maxEntries) {
-        Map<String, Integer> topScores = new HashMap<>();
-        int count = 0;
-        for (Map.Entry<String, Integer> entry : scores.entrySet()) {
-            topScores.put(entry.getKey(), entry.getValue());
-            count++;
-            if (count >= maxEntries) {
-                break;
-            }
-        }
-        return topScores;
     }
 }

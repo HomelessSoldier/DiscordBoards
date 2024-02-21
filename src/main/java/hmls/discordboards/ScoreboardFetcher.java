@@ -1,15 +1,29 @@
-public void saveConfig() {
-    File configFile = new File(FabricLoader.getInstance().getConfigDir().toFile(), CONFIG_FILE_NAME);
+import net.minecraft.scoreboard.Scoreboard;
+import net.minecraft.scoreboard.ScoreboardObjective;
+import net.minecraft.server.MinecraftServer;
+import java.util.Map;
+import java.util.HashMap;
 
-    try (BufferedWriter writer = new BufferedWriter(new FileWriter(configFile))) {
-        writer.write("# DiscordBoards Configuration File\n");
-        writer.write("discordMessageFormat=" + discordMessageFormat + "\n");
-        writer.write("discordChannelId=" + discordChannelId + "\n");
-        writer.write("botWebhookUrl=" + botWebhookUrl + "\n");
-        writer.write("scoreboardObjective=" + scoreboardObjective + "\n");
+public class ScoreboardFetcher {
+    private final MinecraftServer server;
+    private final String objectiveName;
 
-        // ... add lines for other config options
-    } catch (IOException e) {
-        System.err.println("Error saving DiscordBoards config: " + e.getMessage());
+    public ScoreboardFetcher(MinecraftServer server, String objectiveName) {
+        this.server = server;
+        this.objectiveName = objectiveName;
+    }
+
+    public Map<String, Integer> fetchScoreboardData() {
+        Scoreboard scoreboard = server.getWorld(World.OVERWORLD).getScoreboard();
+        ScoreboardObjective objective = scoreboard.getObjective(objectiveName);
+        Map<String, Integer> scores = new HashMap<>();
+
+        if (objective != null) {
+            for (ScoreboardEntry entry : scoreboard.getAllPlayerScores(objective)) {
+                scores.put(entry.getPlayerName(), entry.getScore());
+            }
+        }
+
+        return scores;
     }
 }
