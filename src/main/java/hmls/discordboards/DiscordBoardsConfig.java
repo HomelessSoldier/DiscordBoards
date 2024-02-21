@@ -7,15 +7,12 @@ import java.io.IOException;
 
 public class DiscordBoardsConfig {
     private static final String CONFIG_FILE_NAME = "discordboards.txt";
-    public String discordWebhookUrl = "";
-    public String discordMessageFormat = "`Header1, player 1, player 2, player 3, etc.`";
-    public String scoreboardObjective = "score";
-    public boolean enableTimerUpdates = true;
-    public int timerUpdateInterval = 60;
-    public String updateEvent = "minecraft.server.player_logged_in";
+    public String discordBotToken = "";
+    public String discordChannelId = "";
 
     public void loadConfig() {
-        File configFile = new File(FabricLoader.getInstance().getConfigDir().toFile(), CONFIG_FILE_NAME);
+        File configDir = new File(FabricLoader.getInstance().getConfigDir().toFile(), "config");
+        File configFile = new File(configDir, CONFIG_FILE_NAME);
 
         try (BufferedReader reader = new BufferedReader(new FileReader(configFile))) {
             String line;
@@ -27,27 +24,11 @@ public class DiscordBoardsConfig {
                     String value = parts[1].trim();
 
                     switch (key) {
-                        case "discordwebhook":
-                            discordWebhookUrl = value;
+                        case "discordbottoken": // Make sure this matches the exact key in your config file
+                            discordBotToken = value;
                             break;
-                        case "discordmessageformat":
-                            discordMessageFormat = value;
-                            break;
-                        case "scoreboardname":
-                            scoreboardObjective = value;
-                            break;
-                        case "enabletimerupdates":
-                            enableTimerUpdates = Boolean.parseBoolean(value);
-                            break;
-                        case "timerupdateinterval":
-                            try {
-                                timerUpdateInterval = Integer.parseInt(value);
-                            } catch (NumberFormatException e) {
-                                System.err.println("Invalid timerUpdateInterval in config. Using default value.");
-                            }
-                            break;
-                        case "updateevent":
-                            updateEvent = value;
+                        case "discordchannelid": // Make sure this matches the exact key in your config file
+                            discordChannelId = value;
                             break;
                         default:
                             System.err.println("Unknown config option: " + key);
@@ -60,16 +41,13 @@ public class DiscordBoardsConfig {
     }
 
     public void saveConfig() {
-        File configFile = new File(FabricLoader.getInstance().getConfigDir().toFile(), CONFIG_FILE_NAME);
+        File configDir = new File(FabricLoader.getInstance().getConfigDir().toFile(), "config");
+        File configFile = new File(configDir, CONFIG_FILE_NAME);
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(configFile))) {
             writer.write("# DiscordBoards Configuration File\n");
-            writer.write("discordwebhook=" + discordWebhookUrl + "\n");
-            writer.write("discordmessageformat=" + discordMessageFormat + "\n");
-            writer.write("scoreboardname=" + scoreboardObjective + "\n");
-            writer.write("enabletimerupdates=" + enableTimerUpdates + "\n");
-            writer.write("timerupdateinterval=" + timerUpdateInterval + "\n");
-            writer.write("updateevent=" + updateEvent + "\n");
+            writer.write("discordbottoken=" + discordBotToken + "\n"); //  Make sure this matches the exact key in your config file
+            writer.write("discordchannelid=" + discordChannelId + "\n"); //  Make sure this matches the exact key in your config file
         } catch (IOException e) {
             System.err.println("Error saving DiscordBoards config: " + e.getMessage());
         }
