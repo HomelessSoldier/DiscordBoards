@@ -1,9 +1,7 @@
 package hmls.discordboards;
 
 import hmls.discordboards.DiscordBoardsConfig;
-import io.github.prospectorclothconfig.api.ClothConfig;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardObjective;
@@ -15,6 +13,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okhttp3.Request;
 import okhttp3.Response;
+import hmls.discordboards.ScoreboardFetcher;
 
 import java.io.IOException;
 import java.util.HashMap;

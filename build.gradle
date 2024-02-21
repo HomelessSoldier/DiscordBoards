@@ -19,12 +19,6 @@ dependencies {
     minecraft 'com.mojang:minecraft:1.20.1'
     mappings loom.officialMojangMappings()
     modImplementation 'net.fabricmc:fabric-loader:0.14.25'
-    modImplementation 'net.fabricmc.fabric-api:fabric-api-0.92.0+1.20.1'
-
-    // Cloth Config
-    modImplementation 'io.github.prospector:cloth-config-11.1.118-fabric'
-
-    // HTTP Client (OkHttp)
     modImplementation 'com.squareup.okhttp3:okhttp:4.10.0'
 }
 
