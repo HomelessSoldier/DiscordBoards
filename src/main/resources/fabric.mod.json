@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "discordboards",
+  "version": "${version}",
+  "name": "DiscordBoards",
+  "description": "",
+  "authors": [],
+  "contact": {
+    "repo": "https://github.com/colto/DiscordBoards"
+  },
+  "license": "All-Rights-Reserved",
+  "icon": "assets/discordboards/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "client": [
+      "hmls.discordboards.discordboards.client.DiscordBoardsClient"
+    ],
+    "main": [
+      "hmls.discordboards.discordboards.DiscordBoards"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
