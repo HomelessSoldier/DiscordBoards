@@ -1,5 +1,7 @@
-import com.example.discordboardsmod.DiscordBoardsConfig;
-import io.github.prospector.clothconfig.api.ClothConfig;
+package hmls.discordboards;
+
+import hmls.discordboards.DiscordBoardsConfig;
+import io.github.prospectorclothconfig.api.ClothConfig;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -16,12 +18,11 @@ import okhttp3.Response;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
-public class DiscordBoardsMod implements ModInitializer {
+public class DiscordBoards implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("DiscordBoards");
     public DiscordBoardsConfig config;
     private Timer updateTimer;
